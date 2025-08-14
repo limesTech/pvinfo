@@ -9,20 +9,19 @@ import * as child from "child_process";
 // https://stackoverflow.com/questions/71162040/how-to-insert-git-info-in-environment-variables-using-vite
 // https://stackoverflow.com/questions/70436753/how-to-add-commit-hash-into-reactjs-vite-config-js
 export default defineConfig(({ command, mode }) => {
-    const commitHash = child.execSync("git rev-parse --short HEAD").toString().trimEnd();
-    const commitDate = child.execSync("git log -1 --format='%ad' --date=short --date=format:'%m/%d/%Y'").toString().trimEnd();
-    const errString = "fatal: not a git repository (or any of the parent directories): .git"
-    const errStringShort = "Err: not a git repository";
-
-    if (commitHash !== errString && commitDate !== errString) {
-        process.env.REACT_APP_GIT_SHORT_HASH = commitHash;
-        process.env.REACT_APP_GIT_COMMIT_DATE = commitDate;
-    } else {
-        process.env.REACT_APP_GIT_SHORT_HASH = errStringShort;
-        process.env.REACT_APP_GIT_COMMIT_DATE = errStringShort;
+    let commitHash = "unknown";
+    let commitDate = "unknown";
+    
+    try {
+        commitHash = child.execSync("git rev-parse --short HEAD", { encoding: 'utf8' }).trim();
+        commitDate = child.execSync("git log -1 --format='%ad' --date=short --date=format:'%m/%d/%Y'", { encoding: 'utf8' }).trim();
+    } catch (error) {
+        console.warn("Could not retrieve Git information:", error.message);
+        commitHash = "Err: not a git repo";
+        commitDate = "Err: not a git repo";
     }
-    const env = loadEnv(mode, process.cwd(), '')
 
+    const env = loadEnv(mode, process.cwd(), '')
     return {
         envPrefix: 'REACT_APP_',
         // This changes the out put dir from dist to build
